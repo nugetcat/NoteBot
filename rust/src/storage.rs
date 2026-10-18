@@ -1,27 +1,41 @@
 /*
- * Copyright (C) 2016-2019 Federico Dossena
- * NoteBot Rust port: copyright is held by its respective contributors.
- *
- * This file is part of NoteBot and is distributed under the GNU GPL version 3.
+ * Derived from NoteBot by Federico Dossena, Copyright (C) 2016-2019.
+ * Rust port copyright is held by its respective contributors.
+ * This file is distributed under GNU GPL version 3 only.
  */
 use crate::model::Note;
 use directories::ProjectDirs;
 use std::{fs, io, path::PathBuf};
 
 fn data_file() -> io::Result<PathBuf> {
-    let dirs = ProjectDirs::from("com", "NoteBot", "NoteBot").ok_or_else(|| {
+    let dirs = ProjectDirs::from("", "", "NoteBot").ok_or_else(|| {
         io::Error::new(io::ErrorKind::NotFound, "user data directory unavailable")
     })?;
     Ok(dirs.data_local_dir().join("notes.json"))
 }
 
+fn read_file(path: &PathBuf) -> io::Result<Option<Vec<Note>>> {
+    match fs::read(path) {
+        Ok(bytes) => serde_json::from_slice(&bytes)
+            .map(Some)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
 pub fn load() -> io::Result<Vec<Note>> {
     let path = data_file()?;
-    match fs::read(&path) {
-        Ok(bytes) => serde_json::from_slice(&bytes)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error)),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
-        Err(error) => Err(error),
+    match read_file(&path) {
+        Ok(Some(notes)) => Ok(notes),
+        Ok(None) => match read_file(&path.with_extension("json.bak"))? {
+            Some(notes) => Ok(notes),
+            None => Ok(Vec::new()),
+        },
+        Err(primary_error) => match read_file(&path.with_extension("json.bak")) {
+            Ok(Some(notes)) => Ok(notes),
+            Ok(None) | Err(_) => Err(primary_error),
+        },
     }
 }
 

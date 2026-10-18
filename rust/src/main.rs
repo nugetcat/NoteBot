@@ -13,7 +13,6 @@ use std::{cell::RefCell, rc::Rc};
 slint::include_modules!();
 
 type SharedNotes = Rc<RefCell<Vec<Note>>>;
-type OpenWindows = Rc<RefCell<Vec<NoteWindow>>>;
 
 fn persist(notes: &SharedNotes) {
     if let Err(error) = storage::save(&notes.borrow()) {
@@ -21,11 +20,7 @@ fn persist(notes: &SharedNotes) {
     }
 }
 
-fn open_note(
-    note: Note,
-    notes: SharedNotes,
-    windows: OpenWindows,
-) -> Result<(), slint::PlatformError> {
+fn open_note(note: Note, notes: SharedNotes) -> Result<(), slint::PlatformError> {
     let window = NoteWindow::new()?;
     let weak_window = window.as_weak();
     let note_id = note.id;
@@ -37,6 +32,15 @@ fn open_note(
 
     if !notes.borrow().iter().any(|existing| existing.id == note_id) {
         notes.borrow_mut().push(note.clone());
+    }
+
+    {
+        let notes = notes.clone();
+        window.window().on_close_requested(move || {
+            notes.borrow_mut().retain(|item| item.id != note_id);
+            persist(&notes);
+            slint::CloseRequestResponse::HideWindow
+        });
     }
 
     {
@@ -54,10 +58,9 @@ fn open_note(
     }
     {
         let notes = notes.clone();
-        let windows = windows.clone();
         window.on_new_note(move || {
             let id = next_id(&notes.borrow());
-            if let Err(error) = open_note(Note::new(id), notes.clone(), windows.clone()) {
+            if let Err(error) = open_note(Note::new(id), notes.clone()) {
                 eprintln!("NoteBot: could not open a note: {error}");
             }
         });
@@ -119,7 +122,6 @@ fn open_note(
     }
 
     window.show()?;
-    windows.borrow_mut().push(window);
     persist(&notes);
     Ok(())
 }
@@ -133,10 +135,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if notes.borrow().is_empty() {
         notes.borrow_mut().push(Note::new(1));
     }
-    let windows = Rc::new(RefCell::new(Vec::new()));
 
     for note in notes.borrow().clone() {
-        open_note(note, notes.clone(), windows.clone())?;
+        open_note(note, notes.clone())?;
     }
     persist(&notes);
     slint::run_event_loop()?;
