@@ -1,0 +1,48 @@
+/*
+ * Derived from NoteBot by Federico Dossena, Copyright (C) 2016-2019.
+ * Rust port copyright is held by its respective contributors.
+ * This file is distributed under GNU GPL version 3 only.
+ */
+import { Button, TextEdit } from "std-widgets.slint";
+
+export component NoteWindow inherits Window {
+    in-out property <string> note-text: "";
+    in-out property <color> paper-color: #fdfdca;
+    in-out property <float> text-scale: 1.0;
+
+    callback note-text-edited(string);
+    callback new-note();
+    callback delete-note();
+    callback next-color();
+    callback zoom-in();
+    callback zoom-out();
+
+    title: "NoteBot";
+    preferred-width: 270px;
+    preferred-height: 220px;
+    min-width: 170px;
+    min-height: 130px;
+
+    VerticalLayout {
+        padding: 7px;
+        spacing: 5px;
+
+        HorizontalLayout {
+            spacing: 4px;
+            Button { text: "A−"; clicked => { root.zoom-out(); } }
+            Button { text: "A+"; clicked => { root.zoom-in(); } }
+            Button { text: "Color"; clicked => { root.next-color(); } }
+            Rectangle { horizontal-stretch: 1; background: transparent; }
+            Button { text: "+"; clicked => { root.new-note(); } }
+            Button { text: "×"; clicked => { root.delete-note(); } }
+        }
+
+        TextEdit {
+            text <=> root.note-text;
+            edited(text) => { root.note-text-edited(text); }
+            wrap: word-wrap;
+            font-size: 14px * root.text-scale;
+            vertical-stretch: 1;
+        }
+    }
+}

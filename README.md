@@ -1,4 +1,9 @@
 # NoteBot
+
+## Rust port (in development)
+
+The new Rust + Slint implementation is being developed in [rust/](rust/README.md). The Java/NetBeans application remains in StickyNotes/ as the reference implementation during the port. The Rust port is licensed under GPL-3.0-only to align with Slint's GPLv3 option; the original Java source retains its GPL-3.0-or-later notices. See the Rust README for the current scope and build steps.
+
 NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 
 ## Download
