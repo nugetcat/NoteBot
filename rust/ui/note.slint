@@ -18,6 +18,9 @@ export component NoteWindow inherits Window {
     callback zoom-out();
 
     title: "NoteBot";
+    no-frame: true;
+    // Supported by Slint's winit backend; keeps borderless notes resizable.
+    resize-border-width: 6px;
     background: paper-color;
     preferred-width: 270px;
     preferred-height: 220px;
@@ -33,7 +36,11 @@ export component NoteWindow inherits Window {
             Button { text: "A−"; clicked => { root.zoom-out(); } }
             Button { text: "A+"; clicked => { root.zoom-in(); } }
             Button { text: "Color"; clicked => { root.next-color(); } }
-            Rectangle { horizontal-stretch: 1; background: transparent; }
+            Rectangle {
+                horizontal-stretch: 1;
+                background: transparent;
+                WindowMoveArea {}
+            }
             Button { text: "+"; clicked => { root.new-note(); } }
             Button { text: "×"; clicked => { root.delete-note(); } }
         }
