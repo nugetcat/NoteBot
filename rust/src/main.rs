@@ -59,8 +59,21 @@ fn open_note(
     {
         let notes = notes.clone();
         let windows = windows.clone();
+        let close_window = window.as_weak();
         window.window().on_close_requested(move || {
-            notes.borrow_mut().retain(|item| item.id != note_id);
+            if let Some(window) = close_window.upgrade() {
+                let (x, y, width, height) = note_geometry(&window);
+                if let Some(item) = notes
+                    .borrow_mut()
+                    .iter_mut()
+                    .find(|item| item.id == note_id)
+                {
+                    item.x = Some(x);
+                    item.y = Some(y);
+                    item.width = Some(width);
+                    item.height = Some(height);
+                }
+            }
             windows.borrow_mut().retain(|(id, _)| *id != note_id);
             persist(&notes);
             slint::CloseRequestResponse::HideWindow
@@ -158,6 +171,14 @@ fn saved_geometry_changed(saved: Option<f32>, current: f32) -> bool {
     saved.map_or(true, |saved| (saved - current).abs() > 0.5)
 }
 
+fn note_geometry(window: &NoteWindow) -> (f32, f32, f32, f32) {
+    let native_window = window.window();
+    let scale = native_window.scale_factor();
+    let position = native_window.position().to_logical(scale);
+    let size = native_window.size().to_logical(scale);
+    (position.x, position.y, size.width, size.height)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let loaded = storage::load().unwrap_or_else(|error| {
         eprintln!("NoteBot: could not load saved notes: {error}");
@@ -185,11 +206,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .iter()
                     .filter_map(|(id, weak_window)| {
                         weak_window.upgrade().map(|window| {
-                            let native_window = window.window();
-                            let scale = native_window.scale_factor();
-                            let position = native_window.position().to_logical(scale);
-                            let size = native_window.size().to_logical(scale);
-                            (*id, position.x, position.y, size.width, size.height)
+                            let (x, y, width, height) = note_geometry(&window);
+                            (*id, x, y, width, height)
                         })
                     })
                     .collect::<Vec<_>>()

@@ -4,7 +4,7 @@ This directory contains the new Rust implementation of NoteBot. The Java/NetBean
 
 ## Status
 
-The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position and size, the original eight note colors, text editing, and text scaling. Custom colors, the Java `sticky.dat` importer, startup integration, and exact desktop layering/taskbar behavior remain to be ported. Existing JSON files without geometry fields remain compatible and use the default window geometry until the user moves or resizes a note.
+The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position and size, the original eight note colors, text editing, and text scaling. Closing a window preserves its note for the next launch; the × button deletes it. Custom colors, the Java `sticky.dat` importer, startup integration, and exact desktop layering/taskbar behavior remain to be ported. Existing JSON files without geometry fields remain compatible and use the default window geometry until the user moves or resizes a note.
 
 ## Build
 
