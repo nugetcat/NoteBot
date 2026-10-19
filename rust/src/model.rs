@@ -12,6 +12,14 @@ pub struct Note {
     pub text: String,
     pub color: usize,
     pub text_scale: f32,
+    #[serde(default)]
+    pub x: Option<f32>,
+    #[serde(default)]
+    pub y: Option<f32>,
+    #[serde(default)]
+    pub width: Option<f32>,
+    #[serde(default)]
+    pub height: Option<f32>,
 }
 
 impl Note {
@@ -21,6 +29,10 @@ impl Note {
             text: String::new(),
             color: 0,
             text_scale: 1.0,
+            x: None,
+            y: None,
+            width: None,
+            height: None,
         }
     }
 }
