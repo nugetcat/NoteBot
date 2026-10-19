@@ -1,3 +1,4 @@
 fn main() {
-    slint_build::compile("ui/note.slint").expect("failed to compile Slint UI");
+    let config = slint_build::CompilerConfiguration::new().with_style("fluent-light".into());
+    slint_build::compile_with_config("ui/note.slint", config).expect("failed to compile Slint UI");
 }
