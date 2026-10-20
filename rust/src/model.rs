@@ -11,6 +11,8 @@ pub struct Note {
     pub id: u64,
     pub text: String,
     pub color: usize,
+    #[serde(default)]
+    pub custom_color: Option<String>,
     pub text_scale: f32,
     #[serde(default)]
     pub x: Option<f32>,
@@ -28,6 +30,7 @@ impl Note {
             id,
             text: String::new(),
             color: 0,
+            custom_color: None,
             text_scale: 1.0,
             x: None,
             y: None,

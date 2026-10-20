@@ -48,8 +48,14 @@ fn open_note(
     }
 
     window.set_note_text(note.text.clone().into());
-    let color = PALETTE[note.color % PALETTE.len()];
+    let color = note
+        .custom_color
+        .as_deref()
+        .and_then(parse_hex_color)
+        .unwrap_or(PALETTE[note.color % PALETTE.len()]);
     window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
+    window
+        .set_custom_color_text(format!("#{:02X}{:02X}{:02X}", color[0], color[1], color[2]).into());
     window.set_text_scale(note.text_scale.clamp(0.2, 4.0));
 
     if !notes.borrow().iter().any(|existing| existing.id == note_id) {
@@ -118,21 +124,72 @@ fn open_note(
     {
         let notes = notes.clone();
         let weak_window = window.as_weak();
-        window.on_next_color(move || {
-            let mut next = 0;
+        window.on_toggle_color_picker(move || {
+            if let Some(window) = weak_window.upgrade() {
+                let opening = !window.get_show_color_picker();
+                window.set_show_color_picker(opening);
+                window.set_color_error("".into());
+                if opening {
+                    if let Some(item) = notes.borrow().iter().find(|item| item.id == note_id) {
+                        let current = item
+                            .custom_color
+                            .as_deref()
+                            .and_then(parse_hex_color)
+                            .unwrap_or(PALETTE[item.color % PALETTE.len()]);
+                        window.set_custom_color_text(
+                            format!("#{:02X}{:02X}{:02X}", current[0], current[1], current[2])
+                                .into(),
+                        );
+                    }
+                }
+            }
+        });
+    }
+    {
+        let notes = notes.clone();
+        let weak_window = window.as_weak();
+        window.on_select_palette_color(move |index: i32| {
             if let Some(item) = notes
                 .borrow_mut()
                 .iter_mut()
                 .find(|item| item.id == note_id)
             {
-                item.color = (item.color + 1) % PALETTE.len();
-                next = item.color;
+                item.color = (index as usize) % PALETTE.len();
+                item.custom_color = None;
+                let color = PALETTE[item.color];
+                if let Some(window) = weak_window.upgrade() {
+                    window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
+                    window.set_show_color_picker(false);
+                    window.set_color_error("".into());
+                }
+                persist(&notes);
             }
-            if let Some(window) = weak_window.upgrade() {
-                let color = PALETTE[next];
-                window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
+        });
+    }
+    {
+        let notes = notes.clone();
+        let weak_window = window.as_weak();
+        window.on_apply_custom_color(move |value: SharedString| {
+            let Some(color) = parse_hex_color(&value) else {
+                if let Some(window) = weak_window.upgrade() {
+                    window.set_color_error("Enter a hex value such as #80C0FF".into());
+                }
+                return;
+            };
+            if let Some(item) = notes
+                .borrow_mut()
+                .iter_mut()
+                .find(|item| item.id == note_id)
+            {
+                item.custom_color =
+                    Some(format!("#{:02X}{:02X}{:02X}", color[0], color[1], color[2]));
+                if let Some(window) = weak_window.upgrade() {
+                    window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
+                    window.set_show_color_picker(false);
+                    window.set_color_error("".into());
+                }
+                persist(&notes);
             }
-            persist(&notes);
         });
     }
     for zoom_in in [true, false] {
@@ -169,6 +226,18 @@ fn open_note(
 
 fn saved_geometry_changed(saved: Option<f32>, current: f32) -> bool {
     saved.map_or(true, |saved| (saved - current).abs() > 0.5)
+}
+
+fn parse_hex_color(value: &str) -> Option<[u8; 3]> {
+    let hex = value.trim().strip_prefix('#').unwrap_or(value.trim());
+    if hex.len() != 6 || !hex.is_ascii() {
+        return None;
+    }
+    Some([
+        u8::from_str_radix(&hex[0..2], 16).ok()?,
+        u8::from_str_radix(&hex[2..4], 16).ok()?,
+        u8::from_str_radix(&hex[4..6], 16).ok()?,
+    ])
 }
 
 fn note_geometry(window: &NoteWindow) -> (f32, f32, f32, f32) {
