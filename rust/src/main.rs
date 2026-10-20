@@ -149,14 +149,18 @@ fn open_note(
         let notes = notes.clone();
         let weak_window = window.as_weak();
         window.on_select_palette_color(move |index: i32| {
-            if let Some(item) = notes
-                .borrow_mut()
-                .iter_mut()
-                .find(|item| item.id == note_id)
-            {
-                item.color = (index as usize) % PALETTE.len();
-                item.custom_color = None;
-                let color = PALETTE[item.color];
+            let selected = {
+                let mut notes = notes.borrow_mut();
+                notes
+                    .iter_mut()
+                    .find(|item| item.id == note_id)
+                    .map(|item| {
+                        item.color = (index as usize) % PALETTE.len();
+                        item.custom_color = None;
+                        PALETTE[item.color]
+                    })
+            };
+            if let Some(color) = selected {
                 if let Some(window) = weak_window.upgrade() {
                     window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
                     window.set_show_color_picker(false);
@@ -176,13 +180,17 @@ fn open_note(
                 }
                 return;
             };
-            if let Some(item) = notes
-                .borrow_mut()
-                .iter_mut()
-                .find(|item| item.id == note_id)
-            {
-                item.custom_color =
-                    Some(format!("#{:02X}{:02X}{:02X}", color[0], color[1], color[2]));
+            let updated = {
+                let mut notes = notes.borrow_mut();
+                notes
+                    .iter_mut()
+                    .find(|item| item.id == note_id)
+                    .map(|item| {
+                        item.custom_color =
+                            Some(format!("#{:02X}{:02X}{:02X}", color[0], color[1], color[2]));
+                    })
+            };
+            if updated.is_some() {
                 if let Some(window) = weak_window.upgrade() {
                     window.set_paper_color(slint::Color::from_rgb_u8(color[0], color[1], color[2]));
                     window.set_show_color_picker(false);

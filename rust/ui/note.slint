@@ -50,7 +50,27 @@ export component NoteWindow inherits Window {
             Button { text: "×"; clicked => { root.delete-note(); } }
         }
 
-        if root.show-color-picker: VerticalLayout {
+        TextEdit {
+            text <=> root.note-text;
+            edited(text) => { root.note-text-edited(text); }
+            wrap: word-wrap;
+            font-size: 14px * root.text-scale;
+            vertical-stretch: 1;
+        }
+    }
+
+    if root.show-color-picker: Rectangle {
+        x: 7px;
+        y: 34px;
+        width: root.width - 14px;
+        height: 88px;
+        background: #fffde8;
+        border-width: 1px;
+        border-color: #777777;
+
+        TouchArea { }
+        VerticalLayout {
+            padding: 4px;
             spacing: 4px;
 
             HorizontalLayout {
@@ -75,15 +95,8 @@ export component NoteWindow inherits Window {
                 }
                 Button { text: "Apply"; clicked => { root.apply-custom-color(root.custom-color-text); } }
             }
-            Text { text: root.color-error; color: #a00000; visible: root.color-error != ""; }
-        }
-
-        TextEdit {
-            text <=> root.note-text;
-            edited(text) => { root.note-text-edited(text); }
-            wrap: word-wrap;
-            font-size: 14px * root.text-scale;
-            vertical-stretch: 1;
+            Text { text: root.color-error; color: #a00000; visible: root.color-error != ""; font-size: 11px; }
         }
     }
+
 }
