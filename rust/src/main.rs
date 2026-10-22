@@ -3,6 +3,7 @@
  * Rust port copyright is held by its respective contributors.
  * This file is distributed under GNU GPL version 3 only.
  */
+mod legacy_import;
 mod model;
 mod storage;
 

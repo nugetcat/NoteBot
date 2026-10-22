@@ -4,7 +4,7 @@ This directory contains the new Rust implementation of NoteBot. The Java/NetBean
 
 ## Status
 
-The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position, size, and custom hex color, the original eight note colors, text editing, and text scaling. Closing a window preserves its note for the next launch; the × button deletes it. The Java `sticky.dat` importer, startup integration, and exact desktop layering/taskbar behavior remain to be ported. Existing JSON files without geometry or custom-color fields remain compatible. Custom colors accept six-digit RGB hex values such as `#80C0FF`.
+The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position, size, and custom hex color, the original eight note colors, text editing, and text scaling. On first launch, the app imports notes from the Java `sticky.dat` file (or its backups) when no Rust notes file exists, and leaves the source files untouched. Closing a window preserves its note for the next launch; the × button deletes it. Startup integration and exact desktop layering/taskbar behavior remain to be ported. Existing JSON files without geometry or custom-color fields remain compatible. Custom colors accept six-digit RGB hex values such as `#80C0FF`.
 
 ## Build
 
@@ -14,7 +14,7 @@ Install Rust and the native build prerequisites for Slint, then run:
 cargo run --manifest-path rust/Cargo.toml
 ```
 
-On Windows the saved notes are stored in the user's local application data directory under `NoteBot/notes.json`. This deliberately leaves the original Java `sticky.dat` file untouched until a migration importer is implemented.
+On Windows the saved notes are stored in the user's local application data directory under `NoteBot/notes.json`; the legacy Java file is in that directory as `sticky.dat`.
 
 ## License and attribution
 

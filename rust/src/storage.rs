@@ -7,11 +7,15 @@ use crate::model::Note;
 use directories::ProjectDirs;
 use std::{fs, io, path::PathBuf};
 
-fn data_file() -> io::Result<PathBuf> {
+pub(crate) fn data_directory() -> io::Result<PathBuf> {
     let dirs = ProjectDirs::from("", "", "NoteBot").ok_or_else(|| {
         io::Error::new(io::ErrorKind::NotFound, "user data directory unavailable")
     })?;
-    Ok(dirs.data_local_dir().join("notes.json"))
+    Ok(dirs.data_local_dir().to_path_buf())
+}
+
+fn data_file() -> io::Result<PathBuf> {
+    Ok(data_directory()?.join("notes.json"))
 }
 
 fn read_file(path: &PathBuf) -> io::Result<Option<Vec<Note>>> {
@@ -28,13 +32,21 @@ pub fn load() -> io::Result<Vec<Note>> {
     let path = data_file()?;
     match read_file(&path) {
         Ok(Some(notes)) => Ok(notes),
-        Ok(None) => match read_file(&path.with_extension("json.bak"))? {
-            Some(notes) => Ok(notes),
-            None => Ok(Vec::new()),
+        Ok(None) => match read_file(&path.with_extension("json.bak")) {
+            Ok(Some(notes)) => Ok(notes),
+            Ok(None) => Ok(crate::legacy_import::load_if_available()?.unwrap_or_default()),
+            Err(backup_error) => match crate::legacy_import::load_if_available()? {
+                Some(notes) => Ok(notes),
+                None => Err(backup_error),
+            },
         },
         Err(primary_error) => match read_file(&path.with_extension("json.bak")) {
             Ok(Some(notes)) => Ok(notes),
-            Ok(None) | Err(_) => Err(primary_error),
+            Ok(None) => match crate::legacy_import::load_if_available() {
+                Ok(Some(notes)) => Ok(notes),
+                Ok(None) | Err(_) => Err(primary_error),
+            },
+            Err(_) => Err(primary_error),
         },
     }
 }
