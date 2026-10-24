@@ -4,7 +4,7 @@ This directory contains the new Rust implementation of NoteBot. The Java/NetBean
 
 ## Status
 
-The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position, size, and custom hex color, the original eight note colors, text editing, and text scaling. On first launch, the app imports notes from the Java `sticky.dat` file (or its backups) when no Rust notes file exists, and leaves the source files untouched. Closing a window preserves its note for the next launch; the × button deletes it. Startup integration and exact desktop layering/taskbar behavior remain to be ported. Existing JSON files without geometry or custom-color fields remain compatible. Custom colors accept six-digit RGB hex values such as `#80C0FF`.
+The current application slice supports multiple borderless, draggable, and resizable note windows, local JSON persistence including each note's position, size, and custom hex color, the original eight note colors, text editing, and text scaling. On first launch, the app imports notes from the Java `sticky.dat` file (or its backups) when no Rust notes file exists, and leaves the source files untouched. Closing a window preserves its note for the next launch; the × button deletes it. Windows sign-in startup can be enabled or removed from the command line; exact desktop layering and taskbar behavior remain to be verified. Existing JSON files without geometry or custom-color fields remain compatible. Custom colors accept six-digit RGB hex values such as `#80C0FF`.
 
 ## Build
 
@@ -15,6 +15,8 @@ cargo run --manifest-path rust/Cargo.toml
 ```
 
 On Windows the saved notes are stored in the user's local application data directory under `NoteBot/notes.json`; the legacy Java file is in that directory as `sticky.dat`.
+
+On Windows, run cargo run --manifest-path rust/Cargo.toml -- --install-startup to enable startup at sign-in, or cargo run --manifest-path rust/Cargo.toml -- --remove-startup to disable it. These commands update the current user Run registry entry.
 
 ## License and attribution
 

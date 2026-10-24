@@ -5,6 +5,7 @@
  */
 mod legacy_import;
 mod model;
+mod startup;
 mod storage;
 
 use model::{Note, PALETTE, next_id};
@@ -258,6 +259,43 @@ fn note_geometry(window: &NoteWindow) -> (f32, f32, f32, f32) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let arguments = std::env::args().skip(1).collect::<Vec<_>>();
+    if arguments
+        .iter()
+        .any(|argument| argument == "--help" || argument == "-h")
+    {
+        println!(
+            "NoteBot options:\n  --install-startup   Start NoteBot automatically when you sign in to Windows\n  --remove-startup    Remove NoteBot from Windows startup\n  --autostartup       Start without creating a blank note if no notes are saved"
+        );
+        return Ok(());
+    }
+    if arguments
+        .iter()
+        .any(|argument| argument == "--install-startup")
+    {
+        startup::install()?;
+        println!("NoteBot will start automatically when you sign in to Windows.");
+        return Ok(());
+    }
+    if arguments
+        .iter()
+        .any(|argument| argument == "--remove-startup")
+    {
+        startup::uninstall()?;
+        println!("NoteBot was removed from Windows startup.");
+        return Ok(());
+    }
+
+    let auto_startup = arguments
+        .iter()
+        .any(|argument| argument == "--autostartup" || argument == "-autostartup");
+    if arguments
+        .iter()
+        .any(|argument| !matches!(argument.as_str(), "--autostartup" | "-autostartup"))
+    {
+        return Err("Unknown argument. Use --help to see available options.".into());
+    }
+
     let loaded = storage::load().unwrap_or_else(|error| {
         eprintln!("NoteBot: could not load saved notes: {error}");
         Vec::new()
@@ -265,6 +303,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let notes = Rc::new(RefCell::new(loaded));
     let windows = Rc::new(RefCell::new(Vec::new()));
     if notes.borrow().is_empty() {
+        if auto_startup {
+            return Ok(());
+        }
         notes.borrow_mut().push(Note::new(1));
     }
 
