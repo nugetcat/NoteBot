@@ -24,6 +24,8 @@ export component NoteWindow inherits Window {
 
     title: "NoteBot";
     no-frame: true;
+    // Match the original Java note windows: normal Windows Z-order.
+    always-on-top: false;
     // Supported by Slint's winit backend; keeps borderless notes resizable.
     resize-border-width: 6px;
     background: paper-color;

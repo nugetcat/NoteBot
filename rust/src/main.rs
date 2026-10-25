@@ -67,23 +67,34 @@ fn open_note(
     {
         let notes = notes.clone();
         let windows = windows.clone();
-        let close_window = window.as_weak();
         window.window().on_close_requested(move || {
-            if let Some(window) = close_window.upgrade() {
-                let (x, y, width, height) = note_geometry(&window);
-                if let Some(item) = notes
-                    .borrow_mut()
-                    .iter_mut()
-                    .find(|item| item.id == note_id)
-                {
-                    item.x = Some(x);
-                    item.y = Some(y);
-                    item.width = Some(width);
-                    item.height = Some(height);
+            let geometry = {
+                windows
+                    .borrow()
+                    .iter()
+                    .filter_map(|(id, weak_window)| {
+                        weak_window.upgrade().map(|window| {
+                            let (x, y, width, height) = note_geometry(&window);
+                            (*id, x, y, width, height)
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            };
+            {
+                let mut saved_notes = notes.borrow_mut();
+                for (id, x, y, width, height) in geometry {
+                    if let Some(note) = saved_notes.iter_mut().find(|note| note.id == id) {
+                        note.x = Some(x);
+                        note.y = Some(y);
+                        note.width = Some(width);
+                        note.height = Some(height);
+                    }
                 }
             }
-            windows.borrow_mut().retain(|(id, _)| *id != note_id);
             persist(&notes);
+            if let Err(error) = slint::quit_event_loop() {
+                eprintln!("NoteBot: could not stop the event loop: {error}");
+            }
             slint::CloseRequestResponse::HideWindow
         });
     }
@@ -117,9 +128,15 @@ fn open_note(
         window.on_delete_note(move || {
             notes.borrow_mut().retain(|item| item.id != note_id);
             windows.borrow_mut().retain(|(id, _)| *id != note_id);
+            let last_note_deleted = notes.borrow().is_empty();
             persist(&notes);
             if let Some(window) = weak_window.upgrade() {
                 let _ = window.hide();
+            }
+            if last_note_deleted {
+                if let Err(error) = slint::quit_event_loop() {
+                    eprintln!("NoteBot: could not stop the event loop: {error}");
+                }
             }
         });
     }
